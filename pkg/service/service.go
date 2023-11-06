@@ -68,6 +68,24 @@ func Create(
 	return model.ExposeService(entity), nil
 }
 
+func CreateDraft(
+	ctx context.Context,
+	mc model.ClientSet,
+	entity *model.Service,
+) (*model.ServiceOutput, error) {
+	status.ServiceStatusUnDeployed.True(entity, "")
+	entity.Status.SetSummary(status.WalkService(&entity.Status))
+
+	entity, err := mc.Services().Create().
+		Set(entity).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return model.ExposeService(entity), nil
+}
+
 func UpdateStatus(
 	ctx context.Context,
 	mc model.ClientSet,
@@ -145,7 +163,7 @@ func Destroy(
 	}
 
 	if len(dependants) > 0 {
-		msg := fmt.Sprintf("Waiting for dependants to be deleted: %s", strs.Join(", ", dependants...))
+		msg := fmt.Sprintf("Waiting for dependants to be stopped: %s", strs.Join(", ", dependants...))
 		if !status.ServiceStatusProgressing.IsUnknown(entity) ||
 			status.ServiceStatusDeleted.GetMessage(entity) != msg {
 			// Mark status to deleting with dependency message.

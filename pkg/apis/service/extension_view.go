@@ -3,6 +3,10 @@ package service
 import (
 	"errors"
 	"fmt"
+	"github.com/seal-io/walrus/pkg/dao"
+	"github.com/seal-io/walrus/utils/errorx"
+	"github.com/seal-io/walrus/utils/strs"
+	"net/http"
 
 	"github.com/seal-io/walrus/pkg/apis/runtime"
 	"github.com/seal-io/walrus/pkg/dao/model"
@@ -104,6 +108,56 @@ func (r *RouteRollbackRequest) Validate() error {
 
 	if status.ServiceRevisionStatusReady.IsUnknown(latestRevision) {
 		return errors.New("latest revision is running")
+	}
+
+	return nil
+}
+
+type RouteStopRequest struct {
+	_ struct{} `route:"POST=/stop"`
+
+	model.ServiceDeleteInput `path:",inline"`
+}
+
+func (r *RouteStopRequest) Validate() error {
+	if err := r.ServiceDeleteInput.Validate(); err != nil {
+		return err
+	}
+
+	ids, err := dao.GetServiceDependantIDs(r.Context, r.Client, r.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get service relationships: %w", err)
+	}
+
+	if len(ids) > 0 {
+		names, err := dao.GetServiceNamesByIDs(r.Context, r.Client, ids...)
+		if err != nil {
+			return fmt.Errorf("failed to get services: %w", err)
+		}
+
+		return errorx.HttpErrorf(
+			http.StatusConflict,
+			"service about to be destroyed is the dependency of: %v",
+			strs.Join(", ", names...),
+		)
+	}
+
+	return nil
+}
+
+type RouteStartRequest struct {
+	_ struct{} `route:"POST=/start"`
+
+	model.ServiceQueryInput `path:",inline"`
+}
+
+func (r *RouteStartRequest) Validate() error {
+	if err := r.ServiceQueryInput.Validate(); err != nil {
+		return err
+	}
+
+	if err := validateRevisionsStatus(r.Context, r.Client, r.ID); err != nil {
+		return err
 	}
 
 	return nil

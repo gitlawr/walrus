@@ -1,6 +1,8 @@
 package status
 
 const (
+	ServiceStatusUnDeployed  ConditionType = "Undeployed"
+	ServiceStatusStopped     ConditionType = "Stopped"
 	ServiceStatusDeployed    ConditionType = "Deployed"
 	ServiceStatusDeleted     ConditionType = "Deleted"
 	ServiceStatusReady       ConditionType = "Ready"
@@ -17,8 +19,14 @@ const (
 //	| Deployed         | Unknown                 | Deploying             | Transitioning         |
 //	| Deployed         | False                   | DeployFailed          | Error                 |
 //	| Deployed         | True                    | Deployed              |                       |
+//	| UnDeployed       | Unknown                 | Transitioning         | Transitioning         |
+//	| UnDeployed       | False                   | Error                 | Error                 |
+//	| UnDeployed       | True                    | Undeployed            |                       |
+//	| Stopped          | Unknown                 | Stopping              | Transitioning         |
+//	| Stopped          | False                   | StopFailed            | Error                 |
+//	| Stopped          | True                    | Stopped               |                       |
 //	| Ready            | Unknown                 | Preparing             | Transitioning         |
-//	| Ready            | False                   | NotReady               | Error                 |
+//	| Ready            | False                   | NotReady              | Error                 |
 //	| Ready            | True                    | Ready                 |                       |
 //	| Deleted          | Unknown                 | Deleting              | Transitioning         |
 //	| Deleted          | False                   | DeleteFailed          | Error                 |
@@ -29,6 +37,7 @@ var serviceStatusPaths = NewWalker(
 			ServiceStatusDeleted,
 			ServiceStatusProgressing,
 			ServiceStatusDeployed,
+			ServiceStatusUnDeployed,
 			ServiceStatusReady,
 		},
 	},

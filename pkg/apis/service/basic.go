@@ -21,6 +21,10 @@ import (
 func (h Handler) Create(req CreateRequest) (CreateResponse, error) {
 	entity := req.Model()
 
+	if req.Draft {
+		return pkgservice.CreateDraft(req.Context, h.modelClient, entity)
+	}
+
 	dp, err := h.getDeployer(req.Context)
 	if err != nil {
 		return nil, err

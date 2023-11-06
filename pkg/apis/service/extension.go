@@ -3,6 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/scaleway-sdk-go/logger"
+	deptypes "github.com/seal-io/walrus/pkg/deployer/types"
+	"github.com/seal-io/walrus/utils/strs"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -125,6 +128,137 @@ func (h Handler) RouteRollback(req RouteRollbackRequest) error {
 		dp,
 		entity,
 		applyOpts)
+}
+
+func (h Handler) RouteDeploy(req RouteStartRequest) error {
+	entity := req.Model()
+
+	status.ServiceStatusDeployed.Reset(entity, "Deploying")
+	entity.Status.SetSummary(status.WalkService(&entity.Status))
+
+	err := h.modelClient.WithTx(req.Context, func(tx *model.Tx) (err error) {
+		entity, err = tx.Services().UpdateOne(entity).
+			Set(entity).
+			SaveE(req.Context, dao.ServiceDependenciesEdgeSave)
+
+		return err
+	})
+	if err != nil {
+		return errorx.Wrap(err, "error updating service")
+	}
+
+	dp, err := h.getDeployer(req.Context)
+	if err != nil {
+		return err
+	}
+
+	applyOpts := pkgservice.Options{
+		TlsCertified: h.tlsCertified,
+	}
+
+	ready, err := pkgservice.CheckDependencyStatus(req.Context, h.modelClient, entity)
+	if err != nil {
+		return errorx.Wrap(err, "error checking dependency status")
+	}
+
+	if ready {
+		return pkgservice.Apply(
+			req.Context,
+			h.modelClient,
+			dp,
+			entity,
+			applyOpts)
+	}
+
+	return nil
+}
+
+func (h Handler) RouteStop(req RouteStopRequest) error {
+	entity := req.Model()
+
+	status.ServiceStatusStopped.Reset(entity, "Stopping")
+	entity.Status.SetSummary(status.WalkService(&entity.Status))
+
+	err := h.modelClient.WithTx(req.Context, func(tx *model.Tx) (err error) {
+		entity, err = tx.Services().UpdateOne(entity).
+			Set(entity).
+			SaveE(req.Context, dao.ServiceDependenciesEdgeSave)
+
+		return err
+	})
+	if err != nil {
+		return errorx.Wrap(err, "error updating service")
+	}
+
+	dp, err := h.getDeployer(req.Context)
+	if err != nil {
+		return err
+	}
+
+	updateFailedStatus := func(err error) {
+		status.ServiceStatusStopped.False(entity, err.Error())
+		entity.Status.SetSummary(status.WalkService(&entity.Status))
+
+		err = h.modelClient.Services().UpdateOne(entity).
+			SetStatus(entity.Status).
+			Exec(req.Context)
+		if err != nil && !model.IsNotFound(err) {
+			logger.Errorf("error updating status of service %s: %v", entity.ID, err)
+		}
+
+	}
+
+	// Check dependants.
+	dependants, err := dao.GetServiceDependantNames(req.Context, h.modelClient, entity)
+	if err != nil {
+		updateFailedStatus(err)
+		return err
+	}
+
+	if len(dependants) > 0 {
+		msg := fmt.Sprintf("Waiting for dependants to be stopped: %s", strs.Join(", ", dependants...))
+		if !status.ServiceStatusProgressing.IsUnknown(entity) ||
+			status.ServiceStatusStopped.GetMessage(entity) != msg {
+			// Mark status to stopping with dependency message.
+			status.ServiceStatusStopped.Reset(entity, msg)
+			status.ServiceStatusProgressing.Unknown(entity, "")
+			entity.Status.SetSummary(status.WalkService(&entity.Status))
+
+			err = h.modelClient.Services().UpdateOne(entity).
+				SetStatus(entity.Status).
+				Exec(req.Context)
+			if err != nil && !model.IsNotFound(err) {
+				return fmt.Errorf("failed to update service status: %w", err)
+			}
+		}
+
+		return nil
+	} else {
+		// Mark status to stopping.
+		status.ServiceStatusStopped.Reset(entity, "")
+		status.ServiceStatusProgressing.True(entity, "Resolved dependencies")
+		entity.Status.SetSummary(status.WalkService(&entity.Status))
+
+		err = h.modelClient.Services().UpdateOne(entity).
+			SetStatus(entity.Status).
+			Exec(req.Context)
+		if err != nil && !model.IsNotFound(err) {
+			return fmt.Errorf("failed to update service status: %w", err)
+		}
+	}
+
+	destroyOpts := deptypes.DestroyOptions{
+		SkipTLSVerify: !h.tlsCertified,
+	}
+
+	err = dp.Destroy(req.Context, entity, destroyOpts)
+	if err != nil {
+		log.Errorf("fail to stop service: %w", err)
+
+		updateFailedStatus(err)
+	}
+
+	return nil
 }
 
 func (h Handler) RouteGetAccessEndpoints(req RouteGetAccessEndpointsRequest) (RouteGetAccessEndpointsResponse, error) {

@@ -30,10 +30,13 @@ func SyncServiceRevisionStatus(ctx context.Context, bm revisionbus.BusMessage) (
 		if status.ServiceStatusDeleted.IsUnknown(entity) {
 			return mc.Services().DeleteOne(entity).
 				Exec(ctx)
+		} else if status.ServiceStatusStopped.IsUnknown(entity) {
+			// Stopped
+			status.ServiceStatusStopped.True(entity, "")
+		} else {
+			status.ServiceStatusDeployed.True(entity, "")
+			status.ServiceStatusReady.Unknown(entity, "")
 		}
-
-		status.ServiceStatusDeployed.True(entity, "")
-		status.ServiceStatusReady.Unknown(entity, "")
 	} else if status.ServiceRevisionStatusReady.IsFalse(revision) {
 		if status.ServiceStatusDeleted.IsUnknown(entity) {
 			status.ServiceStatusDeleted.False(entity, "")

@@ -3,6 +3,7 @@ package terraform
 import (
 	"context"
 	"fmt"
+	"github.com/getkin/kin-openapi/openapi3"
 	"reflect"
 
 	"entgo.io/ent/dialect/sql"
@@ -19,6 +20,12 @@ import (
 	"github.com/seal-io/walrus/pkg/dao/types/crypto"
 	"github.com/seal-io/walrus/pkg/terraform/parser"
 )
+
+type UISchema openapi3.T
+
+func (s UISchema) IsEmpty() bool {
+	return true
+}
 
 type ServiceOpts struct {
 	ServiceRevision *model.ServiceRevision

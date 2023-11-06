@@ -29,6 +29,8 @@ import (
 type (
 	CreateRequest struct {
 		model.ServiceCreateInput `path:",inline" json:",inline"`
+
+		Draft bool `json:"draft"`
 	}
 
 	CreateResponse = *model.ServiceOutput
@@ -74,6 +76,11 @@ func (r *CreateRequest) Validate() error {
 	// Validate template version whether match the target environment.
 	if err = validateEnvironment(tv, env); err != nil {
 		return err
+	}
+
+	if r.Draft {
+		// Skip variables validation for draft.
+		return nil
 	}
 
 	// Verify variables with variables schema that defined on the template version.
