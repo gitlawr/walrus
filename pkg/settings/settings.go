@@ -149,6 +149,13 @@ var (
 		editable,
 		initializeFromEnv("false"),
 		modifyWith(notBlank))
+	// EnableLocalMode indicates if Walrus runs in local mode.
+	EnableLocalMode = newValue(
+		"EnableLocalMode",
+		private,
+		initializeFromEnv("false"),
+		modifyWith(notBlank))
+	// ImageRegistry config the image registry for seal tools, like finOps tools.
 )
 
 // the built-in settings for server cron jobs.

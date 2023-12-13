@@ -226,12 +226,18 @@ func (d Deployer) createK8sJob(ctx context.Context, opts createK8sJobOptions) er
 		return err
 	}
 
+	localMode, err := settings.EnableLocalMode.ValueBool(ctx, d.modelClient)
+	if err != nil {
+		return err
+	}
+
 	// Create deployment job.
 	jobOpts := JobCreateOptions{
 		Type:               opts.Type,
 		ResourceRevisionID: opts.ResourceRevision.ID.String(),
 		Image:              jobImage,
 		Env:                jobEnv,
+		LocalMode:          localMode,
 	}
 
 	return CreateJob(ctx, d.clientSet, jobOpts)
