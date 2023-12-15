@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	types2 "github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
+
 	"github.com/seal-io/walrus/pkg/dao"
 	"github.com/seal-io/walrus/pkg/dao/model"
 	"github.com/seal-io/walrus/pkg/dao/model/connector"
@@ -15,6 +18,7 @@ import (
 	"github.com/seal-io/walrus/pkg/dao/types"
 	"github.com/seal-io/walrus/pkg/dao/types/crypto"
 	"github.com/seal-io/walrus/pkg/settings"
+	"github.com/seal-io/walrus/utils/log"
 )
 
 func (r *Server) createLocalEnvironment(ctx context.Context, opts initOptions) error {
@@ -169,4 +173,42 @@ func (r *Server) createBuiltinDefinitions(ctx context.Context, opts initOptions)
 		Set(rd).
 		SaveE(ctx, dao.ResourceDefinitionMatchingRulesEdgeSave)
 	return err
+}
+func (r *Server) createLocalDockerNetwork(ctx context.Context, opts initOptions) error {
+	enableLocalMode, err := settings.EnableLocalMode.ValueBool(ctx, opts.ModelClient)
+	if err != nil {
+		return err
+	}
+
+	if !enableLocalMode {
+		return nil
+	}
+
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return err
+	}
+	networkName := "walrus-local"
+	networks, err := cli.NetworkList(ctx, types2.NetworkListOptions{})
+	if err != nil {
+		return err
+	}
+
+	exists := false
+	for _, n := range networks {
+		if n.Name == networkName {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		_, err = cli.NetworkCreate(ctx, networkName, types2.NetworkCreate{
+			Driver: "bridge",
+		})
+		if err != nil {
+			return err
+		}
+		log.Debug("walrus-local docker network created")
+	}
+	return nil
 }

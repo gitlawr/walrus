@@ -52,6 +52,8 @@ func (r *Server) init(ctx context.Context, opts initOptions) error {
 		r.createBuiltinPerspectives,
 		r.createBuiltinProjects,
 		r.createLocalEnvironment,
+		r.createLocalDockerNetwork,
+		r.createBuiltinDefinitions,
 	)
 
 	for i := range inits {
