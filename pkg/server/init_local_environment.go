@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	modbus "github.com/seal-io/walrus/pkg/bus/template"
+	"github.com/seal-io/walrus/pkg/dao/types/property"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"time"
 
 	types2 "github.com/docker/docker/api/types"
@@ -88,6 +91,16 @@ func (r *Server) createLocalEnvironment(ctx context.Context, opts initOptions) e
 }
 
 func (r *Server) createBuiltinDefinitions(ctx context.Context, opts initOptions) error {
+	go func() {
+		err := r.doCreateBuiltinDefinitions(ctx, opts)
+		if err != nil {
+			log.Error("failed to create builtin definitions, error: %v", err)
+		}
+	}()
+	return nil
+}
+
+func (r *Server) doCreateBuiltinDefinitions(ctx context.Context, opts initOptions) error {
 	enableLocalMode, err := settings.EnableLocalMode.ValueBool(ctx, opts.ModelClient)
 	if err != nil {
 		return err
@@ -122,28 +135,42 @@ func (r *Server) createBuiltinDefinitions(ctx context.Context, opts initOptions)
 		if err != nil {
 			return err
 		}
-		// Simple hack to wait template version ready.
-		time.Sleep(time.Second * 10)
+		if err = modbus.Notify(ctx, tmpl); err != nil {
+			return err
+		}
 	} else if err != nil {
 		return err
 	}
 
-	ktv, err := opts.ModelClient.TemplateVersions().Query().
-		Where(
-			templateversion.Name("kubernetes-containerservice"),
-			templateversion.Version("v0.1.3"),
-		).
-		Only(ctx)
-	if err != nil {
-		return err
-	}
+	var ktv, dtv *model.TemplateVersion
+	err = wait.PollUntilContextTimeout(ctx, 15*time.Second, 5*time.Minute, false,
+		func(ctx context.Context) (bool, error) {
+			ktv, err = opts.ModelClient.TemplateVersions().Query().
+				Where(
+					templateversion.Name("kubernetes-containerservice"),
+					templateversion.Version("v0.1.3"),
+				).
+				Only(ctx)
+			if model.IsNotFound(err) {
+				return false, nil
+			} else if err != nil {
+				return false, err
+			}
 
-	dtv, err := opts.ModelClient.TemplateVersions().Query().
-		Where(
-			templateversion.Name("docker-containerservice"),
-			templateversion.Version("main"),
-		).
-		Only(ctx)
+			dtv, err = opts.ModelClient.TemplateVersions().Query().
+				Where(
+					templateversion.Name("docker-containerservice"),
+					templateversion.Version("main"),
+				).
+				Only(ctx)
+			if model.IsNotFound(err) {
+				return false, nil
+			} else if err != nil {
+				return false, err
+			}
+
+			return true, nil
+		})
 	if err != nil {
 		return err
 	}
@@ -158,6 +185,9 @@ func (r *Server) createBuiltinDefinitions(ctx context.Context, opts initOptions)
 					TemplateID: dtv.ID,
 					Selector: types.Selector{
 						EnvironmentName: "local",
+					},
+					Attributes: property.Values{
+						"infrastructure": []byte(`{"network_id": "walrus-local"}`),
 					},
 				}, {
 					Name:       "development",
@@ -174,6 +204,7 @@ func (r *Server) createBuiltinDefinitions(ctx context.Context, opts initOptions)
 		SaveE(ctx, dao.ResourceDefinitionMatchingRulesEdgeSave)
 	return err
 }
+
 func (r *Server) createLocalDockerNetwork(ctx context.Context, opts initOptions) error {
 	enableLocalMode, err := settings.EnableLocalMode.ValueBool(ctx, opts.ModelClient)
 	if err != nil {

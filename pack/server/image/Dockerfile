@@ -142,7 +142,7 @@ RUN set -exo pipefail; \
 
 # get airgap images.
 RUN set -exo pipefail; \
-        DEPLOYER_IMAGE="sealio/terraform-deployer:v0.1.4"; \
+        DEPLOYER_IMAGE="lawr/terraform-deployer:1217"; \
 	crane pull --platform=${TARGETPLATFORM} ${DEPLOYER_IMAGE} ${K3S_DATA_DIR}/agent/images/terraform-deployer.tar; \
 	DEPLOYER_AIRGAP_IMAGE="sealio/terraform-deployer:v0.1.4-airgap"; \
 	crane pull --platform=${TARGETPLATFORM} ${DEPLOYER_AIRGAP_IMAGE} ${K3S_DATA_DIR}/agent/images/terraform-deployer-airgap.tar; \

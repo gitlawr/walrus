@@ -48,6 +48,8 @@ func PatchObjects(sc *config.Config, group string, objs []Object) error {
 				return err
 			}
 
+			fmt.Printf("resource %q patched\n", o.Name)
+
 			_, err = formatter.Format(sc.Format, resp)
 
 			return err
@@ -112,6 +114,10 @@ func batchCreateObjects(sc *config.Config, objs []Object, createOpt *api.Operati
 	resp, err := sc.DoRequest(req)
 	if err != nil {
 		return err
+	}
+
+	for _, o := range objs {
+		fmt.Printf("resource %q created\n", o.Name)
 	}
 
 	_, err = formatter.Format(sc.Format, resp)
@@ -234,6 +240,10 @@ func DeleteObjects(sc *config.Config, group string, objs []Object) error {
 		resp, err := sc.DoRequest(req)
 		if err != nil {
 			return err
+		}
+
+		for _, o := range objs {
+			fmt.Printf("resource %q deleted\n", o.Name)
 		}
 
 		_, err = formatter.Format(sc.Format, resp)

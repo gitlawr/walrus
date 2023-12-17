@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -136,13 +139,55 @@ func setup(sc config.ServerContext, serverConfig *config.Config, flags *pflag.Fl
 			merged.Environment = ""
 		}
 	}
+	isLocal, err := flags.GetBool("local")
+	if err != nil {
+		return err
+	}
+	if isLocal {
+		installed, err := checkWalrusDockerExtension()
+		if err != nil {
+			return err
+		}
+		if !installed {
+			confirm := ""
+			prompt := &survey.Input{
+				Message: "Install Walrus docker extension to proceed [y/N]",
+			}
 
-	err := merged.ValidateAndSetup()
+			survey.AskOne(prompt, &confirm)
+			if confirm != "y" {
+				return nil
+			}
+
+			err = installWalrusDockerExtension()
+			if err != nil {
+				return fmt.Errorf("failed to install walrus docker extension: %w", err)
+			}
+			fmt.Println("Walrus docker extension installed successfully.")
+			fmt.Println("Checking readiness...")
+		}
+		merged.ServerContext.Server = "https://localhost:7443"
+		merged.ServerContext.Insecure = true
+		merged.ServerContext.Project = "default"
+		merged.ServerContext.Environment = "local"
+	}
+
+	wait.PollUntilContextTimeout(context.Background(), 5*time.Second, 5*time.Minute, false, func(ctx context.Context) (done bool, err error) {
+		err = merged.ValidateAndSetup()
+		if err != nil {
+			return false, nil
+		}
+		return true, nil
+	})
+
+	serverConfig.ServerContext = merged.ServerContext
+
+	err = api.InitOpenAPI(serverConfig, true)
 	if err != nil {
 		return err
 	}
 
-	serverConfig.ServerContext = merged.ServerContext
+	fmt.Println("Walrus CLI is configured.")
 
 	return config.SetServerContextToCache(serverConfig.ServerContext)
 }
@@ -231,4 +276,22 @@ func questions(serverConfig *config.Config) []*survey.Question {
 	}
 
 	return qs
+}
+
+func checkWalrusDockerExtension() (bool, error) {
+	cmd := exec.Command("docker", "extension", "ls")
+	out, err := cmd.Output()
+	if strings.Contains(string(out), "walrus-docker-extension") {
+		return true, nil
+	}
+	return false, err
+}
+
+func installWalrusDockerExtension() error {
+	cmd := exec.Command("docker", "extension", "install", "lawr/walrus-docker-extension:latest", "--force")
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
 }

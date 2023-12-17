@@ -15,6 +15,7 @@ const (
 	FlagNameServer   = "server"
 	FlagNameToken    = "token"
 	FlagNameInsecure = "insecure"
+	FlagNameLocal    = "local"
 )
 
 // ServerContext contains the server config.
@@ -34,6 +35,7 @@ func (c *ServerContext) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&c.Server, FlagNameServer, "s", "", "Server address, format: scheme://host:port")
 	cmd.Flags().StringVarP(&c.Token, FlagNameToken, "", "", "Auth token to communicate to server")
 	cmd.Flags().BoolVarP(&c.Insecure, FlagNameInsecure, "", false, "Disable SSL verification")
+	cmd.Flags().BoolVarP(&c.Insecure, FlagNameLocal, "", false, "Set up and connects local walrus.")
 }
 
 // OpenAPIURL generate OpenAPI url.
