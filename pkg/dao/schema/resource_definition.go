@@ -24,8 +24,7 @@ func (ResourceDefinition) Mixin() []ent.Mixin {
 
 func (ResourceDefinition) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("type").
-			Unique(),
+		index.Fields("type"),
 		index.Fields("name").
 			Unique(),
 	}
@@ -35,7 +34,14 @@ func (ResourceDefinition) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("type").
 			Comment("Type of the resources generated from the resource definition.").
-			Immutable(),
+			Immutable().
+			Annotations(
+				entx.Input(entx.WithQuery(), entx.WithUpdate()),
+			),
+		field.Strings("applicable_project_names").
+			Comment("Projects the resource definition applies to.").
+			Default([]string{}).
+			Optional(),
 		field.JSON("schema", types.Schema{}).
 			Comment("Generated schema of the resource definition.").
 			Default(types.Schema{}).
