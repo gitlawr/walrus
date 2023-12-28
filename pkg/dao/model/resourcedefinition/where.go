@@ -391,6 +391,16 @@ func TypeContainsFold(v string) predicate.ResourceDefinition {
 	return predicate.ResourceDefinition(sql.FieldContainsFold(FieldType, v))
 }
 
+// ApplicableProjectNamesIsNil applies the IsNil predicate on the "applicable_project_names" field.
+func ApplicableProjectNamesIsNil() predicate.ResourceDefinition {
+	return predicate.ResourceDefinition(sql.FieldIsNull(FieldApplicableProjectNames))
+}
+
+// ApplicableProjectNamesNotNil applies the NotNil predicate on the "applicable_project_names" field.
+func ApplicableProjectNamesNotNil() predicate.ResourceDefinition {
+	return predicate.ResourceDefinition(sql.FieldNotNull(FieldApplicableProjectNames))
+}
+
 // UiSchemaIsNil applies the IsNil predicate on the "uiSchema" field.
 func UiSchemaIsNil() predicate.ResourceDefinition {
 	return predicate.ResourceDefinition(sql.FieldIsNull(FieldUiSchema))

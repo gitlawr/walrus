@@ -100,6 +100,12 @@ func (rdc *ResourceDefinitionCreate) SetType(s string) *ResourceDefinitionCreate
 	return rdc
 }
 
+// SetApplicableProjectNames sets the "applicable_project_names" field.
+func (rdc *ResourceDefinitionCreate) SetApplicableProjectNames(s []string) *ResourceDefinitionCreate {
+	rdc.mutation.SetApplicableProjectNames(s)
+	return rdc
+}
+
 // SetSchema sets the "schema" field.
 func (rdc *ResourceDefinitionCreate) SetSchema(t types.Schema) *ResourceDefinitionCreate {
 	rdc.mutation.SetSchema(t)
@@ -215,6 +221,10 @@ func (rdc *ResourceDefinitionCreate) defaults() error {
 		v := resourcedefinition.DefaultUpdateTime()
 		rdc.mutation.SetUpdateTime(v)
 	}
+	if _, ok := rdc.mutation.ApplicableProjectNames(); !ok {
+		v := resourcedefinition.DefaultApplicableProjectNames
+		rdc.mutation.SetApplicableProjectNames(v)
+	}
 	if _, ok := rdc.mutation.Schema(); !ok {
 		v := resourcedefinition.DefaultSchema
 		rdc.mutation.SetSchema(v)
@@ -318,6 +328,10 @@ func (rdc *ResourceDefinitionCreate) createSpec() (*ResourceDefinition, *sqlgrap
 		_spec.SetField(resourcedefinition.FieldType, field.TypeString, value)
 		_node.Type = value
 	}
+	if value, ok := rdc.mutation.ApplicableProjectNames(); ok {
+		_spec.SetField(resourcedefinition.FieldApplicableProjectNames, field.TypeJSON, value)
+		_node.ApplicableProjectNames = value
+	}
 	if value, ok := rdc.mutation.Schema(); ok {
 		_spec.SetField(resourcedefinition.FieldSchema, field.TypeJSON, value)
 		_node.Schema = value
@@ -403,6 +417,9 @@ func (rdc *ResourceDefinitionCreate) Set(obj *ResourceDefinition) *ResourceDefin
 	if obj.UpdateTime != nil {
 		rdc.SetUpdateTime(*obj.UpdateTime)
 	}
+	if !reflect.ValueOf(obj.ApplicableProjectNames).IsZero() {
+		rdc.SetApplicableProjectNames(obj.ApplicableProjectNames)
+	}
 	if !reflect.ValueOf(obj.UiSchema).IsZero() {
 		rdc.SetUiSchema(obj.UiSchema)
 	}
@@ -443,7 +460,7 @@ func (rdc *ResourceDefinitionCreate) SaveE(ctx context.Context, cbs ...func(ctx 
 	if rdc.fromUpsert {
 		q := mc.ResourceDefinitions().Query().
 			Where(
-				resourcedefinition.Type(obj.Type),
+				resourcedefinition.Name(obj.Name),
 			)
 		obj.ID, err = q.OnlyID(ctx)
 		if err != nil {
@@ -562,7 +579,7 @@ func (rdcb *ResourceDefinitionCreateBulk) SaveE(ctx context.Context, cbs ...func
 			obj := objs[i]
 			q := mc.ResourceDefinitions().Query().
 				Where(
-					resourcedefinition.Type(obj.Type),
+					resourcedefinition.Name(obj.Name),
 				)
 			objs[i].ID, err = q.OnlyID(ctx)
 			if err != nil {
@@ -774,6 +791,24 @@ func (u *ResourceDefinitionUpsert) UpdateUpdateTime() *ResourceDefinitionUpsert 
 	return u
 }
 
+// SetApplicableProjectNames sets the "applicable_project_names" field.
+func (u *ResourceDefinitionUpsert) SetApplicableProjectNames(v []string) *ResourceDefinitionUpsert {
+	u.Set(resourcedefinition.FieldApplicableProjectNames, v)
+	return u
+}
+
+// UpdateApplicableProjectNames sets the "applicable_project_names" field to the value that was provided on create.
+func (u *ResourceDefinitionUpsert) UpdateApplicableProjectNames() *ResourceDefinitionUpsert {
+	u.SetExcluded(resourcedefinition.FieldApplicableProjectNames)
+	return u
+}
+
+// ClearApplicableProjectNames clears the value of the "applicable_project_names" field.
+func (u *ResourceDefinitionUpsert) ClearApplicableProjectNames() *ResourceDefinitionUpsert {
+	u.SetNull(resourcedefinition.FieldApplicableProjectNames)
+	return u
+}
+
 // SetSchema sets the "schema" field.
 func (u *ResourceDefinitionUpsert) SetSchema(v types.Schema) *ResourceDefinitionUpsert {
 	u.Set(resourcedefinition.FieldSchema, v)
@@ -935,6 +970,27 @@ func (u *ResourceDefinitionUpsertOne) SetUpdateTime(v time.Time) *ResourceDefini
 func (u *ResourceDefinitionUpsertOne) UpdateUpdateTime() *ResourceDefinitionUpsertOne {
 	return u.Update(func(s *ResourceDefinitionUpsert) {
 		s.UpdateUpdateTime()
+	})
+}
+
+// SetApplicableProjectNames sets the "applicable_project_names" field.
+func (u *ResourceDefinitionUpsertOne) SetApplicableProjectNames(v []string) *ResourceDefinitionUpsertOne {
+	return u.Update(func(s *ResourceDefinitionUpsert) {
+		s.SetApplicableProjectNames(v)
+	})
+}
+
+// UpdateApplicableProjectNames sets the "applicable_project_names" field to the value that was provided on create.
+func (u *ResourceDefinitionUpsertOne) UpdateApplicableProjectNames() *ResourceDefinitionUpsertOne {
+	return u.Update(func(s *ResourceDefinitionUpsert) {
+		s.UpdateApplicableProjectNames()
+	})
+}
+
+// ClearApplicableProjectNames clears the value of the "applicable_project_names" field.
+func (u *ResourceDefinitionUpsertOne) ClearApplicableProjectNames() *ResourceDefinitionUpsertOne {
+	return u.Update(func(s *ResourceDefinitionUpsert) {
+		s.ClearApplicableProjectNames()
 	})
 }
 
@@ -1269,6 +1325,27 @@ func (u *ResourceDefinitionUpsertBulk) SetUpdateTime(v time.Time) *ResourceDefin
 func (u *ResourceDefinitionUpsertBulk) UpdateUpdateTime() *ResourceDefinitionUpsertBulk {
 	return u.Update(func(s *ResourceDefinitionUpsert) {
 		s.UpdateUpdateTime()
+	})
+}
+
+// SetApplicableProjectNames sets the "applicable_project_names" field.
+func (u *ResourceDefinitionUpsertBulk) SetApplicableProjectNames(v []string) *ResourceDefinitionUpsertBulk {
+	return u.Update(func(s *ResourceDefinitionUpsert) {
+		s.SetApplicableProjectNames(v)
+	})
+}
+
+// UpdateApplicableProjectNames sets the "applicable_project_names" field to the value that was provided on create.
+func (u *ResourceDefinitionUpsertBulk) UpdateApplicableProjectNames() *ResourceDefinitionUpsertBulk {
+	return u.Update(func(s *ResourceDefinitionUpsert) {
+		s.UpdateApplicableProjectNames()
+	})
+}
+
+// ClearApplicableProjectNames clears the value of the "applicable_project_names" field.
+func (u *ResourceDefinitionUpsertBulk) ClearApplicableProjectNames() *ResourceDefinitionUpsertBulk {
+	return u.Update(func(s *ResourceDefinitionUpsert) {
+		s.ClearApplicableProjectNames()
 	})
 }
 

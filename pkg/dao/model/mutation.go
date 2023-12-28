@@ -14338,28 +14338,30 @@ func (m *ResourceComponentRelationshipMutation) ResetEdge(name string) error {
 // ResourceDefinitionMutation represents an operation that mutates the ResourceDefinition nodes in the graph.
 type ResourceDefinitionMutation struct {
 	config
-	op                    Op
-	typ                   string
-	id                    *object.ID
-	name                  *string
-	description           *string
-	labels                *map[string]string
-	annotations           *map[string]string
-	create_time           *time.Time
-	update_time           *time.Time
-	_type                 *string
-	schema                *types.Schema
-	uiSchema              **types.UISchema
-	clearedFields         map[string]struct{}
-	matching_rules        map[object.ID]struct{}
-	removedmatching_rules map[object.ID]struct{}
-	clearedmatching_rules bool
-	resources             map[object.ID]struct{}
-	removedresources      map[object.ID]struct{}
-	clearedresources      bool
-	done                  bool
-	oldValue              func(context.Context) (*ResourceDefinition, error)
-	predicates            []predicate.ResourceDefinition
+	op                             Op
+	typ                            string
+	id                             *object.ID
+	name                           *string
+	description                    *string
+	labels                         *map[string]string
+	annotations                    *map[string]string
+	create_time                    *time.Time
+	update_time                    *time.Time
+	_type                          *string
+	applicable_project_names       *[]string
+	appendapplicable_project_names []string
+	schema                         *types.Schema
+	uiSchema                       **types.UISchema
+	clearedFields                  map[string]struct{}
+	matching_rules                 map[object.ID]struct{}
+	removedmatching_rules          map[object.ID]struct{}
+	clearedmatching_rules          bool
+	resources                      map[object.ID]struct{}
+	removedresources               map[object.ID]struct{}
+	clearedresources               bool
+	done                           bool
+	oldValue                       func(context.Context) (*ResourceDefinition, error)
+	predicates                     []predicate.ResourceDefinition
 }
 
 var _ ent.Mutation = (*ResourceDefinitionMutation)(nil)
@@ -14757,6 +14759,71 @@ func (m *ResourceDefinitionMutation) ResetType() {
 	m._type = nil
 }
 
+// SetApplicableProjectNames sets the "applicable_project_names" field.
+func (m *ResourceDefinitionMutation) SetApplicableProjectNames(s []string) {
+	m.applicable_project_names = &s
+	m.appendapplicable_project_names = nil
+}
+
+// ApplicableProjectNames returns the value of the "applicable_project_names" field in the mutation.
+func (m *ResourceDefinitionMutation) ApplicableProjectNames() (r []string, exists bool) {
+	v := m.applicable_project_names
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldApplicableProjectNames returns the old "applicable_project_names" field's value of the ResourceDefinition entity.
+// If the ResourceDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ResourceDefinitionMutation) OldApplicableProjectNames(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldApplicableProjectNames is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldApplicableProjectNames requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldApplicableProjectNames: %w", err)
+	}
+	return oldValue.ApplicableProjectNames, nil
+}
+
+// AppendApplicableProjectNames adds s to the "applicable_project_names" field.
+func (m *ResourceDefinitionMutation) AppendApplicableProjectNames(s []string) {
+	m.appendapplicable_project_names = append(m.appendapplicable_project_names, s...)
+}
+
+// AppendedApplicableProjectNames returns the list of values that were appended to the "applicable_project_names" field in this mutation.
+func (m *ResourceDefinitionMutation) AppendedApplicableProjectNames() ([]string, bool) {
+	if len(m.appendapplicable_project_names) == 0 {
+		return nil, false
+	}
+	return m.appendapplicable_project_names, true
+}
+
+// ClearApplicableProjectNames clears the value of the "applicable_project_names" field.
+func (m *ResourceDefinitionMutation) ClearApplicableProjectNames() {
+	m.applicable_project_names = nil
+	m.appendapplicable_project_names = nil
+	m.clearedFields[resourcedefinition.FieldApplicableProjectNames] = struct{}{}
+}
+
+// ApplicableProjectNamesCleared returns if the "applicable_project_names" field was cleared in this mutation.
+func (m *ResourceDefinitionMutation) ApplicableProjectNamesCleared() bool {
+	_, ok := m.clearedFields[resourcedefinition.FieldApplicableProjectNames]
+	return ok
+}
+
+// ResetApplicableProjectNames resets all changes to the "applicable_project_names" field.
+func (m *ResourceDefinitionMutation) ResetApplicableProjectNames() {
+	m.applicable_project_names = nil
+	m.appendapplicable_project_names = nil
+	delete(m.clearedFields, resourcedefinition.FieldApplicableProjectNames)
+}
+
 // SetSchema sets the "schema" field.
 func (m *ResourceDefinitionMutation) SetSchema(t types.Schema) {
 	m.schema = &t
@@ -14984,7 +15051,7 @@ func (m *ResourceDefinitionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ResourceDefinitionMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.name != nil {
 		fields = append(fields, resourcedefinition.FieldName)
 	}
@@ -15005,6 +15072,9 @@ func (m *ResourceDefinitionMutation) Fields() []string {
 	}
 	if m._type != nil {
 		fields = append(fields, resourcedefinition.FieldType)
+	}
+	if m.applicable_project_names != nil {
+		fields = append(fields, resourcedefinition.FieldApplicableProjectNames)
 	}
 	if m.schema != nil {
 		fields = append(fields, resourcedefinition.FieldSchema)
@@ -15034,6 +15104,8 @@ func (m *ResourceDefinitionMutation) Field(name string) (ent.Value, bool) {
 		return m.UpdateTime()
 	case resourcedefinition.FieldType:
 		return m.GetType()
+	case resourcedefinition.FieldApplicableProjectNames:
+		return m.ApplicableProjectNames()
 	case resourcedefinition.FieldSchema:
 		return m.Schema()
 	case resourcedefinition.FieldUiSchema:
@@ -15061,6 +15133,8 @@ func (m *ResourceDefinitionMutation) OldField(ctx context.Context, name string) 
 		return m.OldUpdateTime(ctx)
 	case resourcedefinition.FieldType:
 		return m.OldType(ctx)
+	case resourcedefinition.FieldApplicableProjectNames:
+		return m.OldApplicableProjectNames(ctx)
 	case resourcedefinition.FieldSchema:
 		return m.OldSchema(ctx)
 	case resourcedefinition.FieldUiSchema:
@@ -15123,6 +15197,13 @@ func (m *ResourceDefinitionMutation) SetField(name string, value ent.Value) erro
 		}
 		m.SetType(v)
 		return nil
+	case resourcedefinition.FieldApplicableProjectNames:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetApplicableProjectNames(v)
+		return nil
 	case resourcedefinition.FieldSchema:
 		v, ok := value.(types.Schema)
 		if !ok {
@@ -15176,6 +15257,9 @@ func (m *ResourceDefinitionMutation) ClearedFields() []string {
 	if m.FieldCleared(resourcedefinition.FieldAnnotations) {
 		fields = append(fields, resourcedefinition.FieldAnnotations)
 	}
+	if m.FieldCleared(resourcedefinition.FieldApplicableProjectNames) {
+		fields = append(fields, resourcedefinition.FieldApplicableProjectNames)
+	}
 	if m.FieldCleared(resourcedefinition.FieldUiSchema) {
 		fields = append(fields, resourcedefinition.FieldUiSchema)
 	}
@@ -15201,6 +15285,9 @@ func (m *ResourceDefinitionMutation) ClearField(name string) error {
 		return nil
 	case resourcedefinition.FieldAnnotations:
 		m.ClearAnnotations()
+		return nil
+	case resourcedefinition.FieldApplicableProjectNames:
+		m.ClearApplicableProjectNames()
 		return nil
 	case resourcedefinition.FieldUiSchema:
 		m.ClearUiSchema()
@@ -15233,6 +15320,9 @@ func (m *ResourceDefinitionMutation) ResetField(name string) error {
 		return nil
 	case resourcedefinition.FieldType:
 		m.ResetType()
+		return nil
+	case resourcedefinition.FieldApplicableProjectNames:
+		m.ResetApplicableProjectNames()
 		return nil
 	case resourcedefinition.FieldSchema:
 		m.ResetSchema()

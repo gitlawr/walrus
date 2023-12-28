@@ -475,6 +475,7 @@ var (
 		{Name: "create_time", Type: field.TypeTime},
 		{Name: "update_time", Type: field.TypeTime},
 		{Name: "type", Type: field.TypeString},
+		{Name: "applicable_project_names", Type: field.TypeJSON, Nullable: true},
 		{Name: "schema", Type: field.TypeJSON},
 		{Name: "ui_schema", Type: field.TypeJSON, Nullable: true},
 	}
@@ -486,7 +487,7 @@ var (
 		Indexes: []*schema.Index{
 			{
 				Name:    "resourcedefinition_type",
-				Unique:  true,
+				Unique:  false,
 				Columns: []*schema.Column{ResourceDefinitionsColumns[7]},
 			},
 			{

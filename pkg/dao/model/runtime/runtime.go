@@ -501,12 +501,16 @@ func init() {
 	resourcedefinition.DefaultUpdateTime = resourcedefinitionDescUpdateTime.Default.(func() time.Time)
 	// resourcedefinition.UpdateDefaultUpdateTime holds the default value on update for the update_time field.
 	resourcedefinition.UpdateDefaultUpdateTime = resourcedefinitionDescUpdateTime.UpdateDefault.(func() time.Time)
+	// resourcedefinitionDescApplicableProjectNames is the schema descriptor for applicable_project_names field.
+	resourcedefinitionDescApplicableProjectNames := resourcedefinitionFields[1].Descriptor()
+	// resourcedefinition.DefaultApplicableProjectNames holds the default value on creation for the applicable_project_names field.
+	resourcedefinition.DefaultApplicableProjectNames = resourcedefinitionDescApplicableProjectNames.Default.([]string)
 	// resourcedefinitionDescSchema is the schema descriptor for schema field.
-	resourcedefinitionDescSchema := resourcedefinitionFields[1].Descriptor()
+	resourcedefinitionDescSchema := resourcedefinitionFields[2].Descriptor()
 	// resourcedefinition.DefaultSchema holds the default value on creation for the schema field.
 	resourcedefinition.DefaultSchema = resourcedefinitionDescSchema.Default.(types.Schema)
 	// resourcedefinitionDescUiSchema is the schema descriptor for uiSchema field.
-	resourcedefinitionDescUiSchema := resourcedefinitionFields[2].Descriptor()
+	resourcedefinitionDescUiSchema := resourcedefinitionFields[3].Descriptor()
 	// resourcedefinition.DefaultUiSchema holds the default value on creation for the uiSchema field.
 	resourcedefinition.DefaultUiSchema = resourcedefinitionDescUiSchema.Default.(*types.UISchema)
 	resourcedefinitionmatchingruleMixin := schema.ResourceDefinitionMatchingRule{}.Mixin()

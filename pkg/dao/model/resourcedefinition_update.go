@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 
 	"github.com/seal-io/walrus/pkg/dao/model/internal"
@@ -89,6 +90,24 @@ func (rdu *ResourceDefinitionUpdate) ClearAnnotations() *ResourceDefinitionUpdat
 // SetUpdateTime sets the "update_time" field.
 func (rdu *ResourceDefinitionUpdate) SetUpdateTime(t time.Time) *ResourceDefinitionUpdate {
 	rdu.mutation.SetUpdateTime(t)
+	return rdu
+}
+
+// SetApplicableProjectNames sets the "applicable_project_names" field.
+func (rdu *ResourceDefinitionUpdate) SetApplicableProjectNames(s []string) *ResourceDefinitionUpdate {
+	rdu.mutation.SetApplicableProjectNames(s)
+	return rdu
+}
+
+// AppendApplicableProjectNames appends s to the "applicable_project_names" field.
+func (rdu *ResourceDefinitionUpdate) AppendApplicableProjectNames(s []string) *ResourceDefinitionUpdate {
+	rdu.mutation.AppendApplicableProjectNames(s)
+	return rdu
+}
+
+// ClearApplicableProjectNames clears the value of the "applicable_project_names" field.
+func (rdu *ResourceDefinitionUpdate) ClearApplicableProjectNames() *ResourceDefinitionUpdate {
+	rdu.mutation.ClearApplicableProjectNames()
 	return rdu
 }
 
@@ -283,6 +302,11 @@ func (rdu *ResourceDefinitionUpdate) Set(obj *ResourceDefinition) *ResourceDefin
 	if !reflect.ValueOf(obj.Annotations).IsZero() {
 		rdu.SetAnnotations(obj.Annotations)
 	}
+	if !reflect.ValueOf(obj.ApplicableProjectNames).IsZero() {
+		rdu.SetApplicableProjectNames(obj.ApplicableProjectNames)
+	} else {
+		rdu.ClearApplicableProjectNames()
+	}
 	rdu.SetSchema(obj.Schema)
 	if !reflect.ValueOf(obj.UiSchema).IsZero() {
 		rdu.SetUiSchema(obj.UiSchema)
@@ -334,6 +358,17 @@ func (rdu *ResourceDefinitionUpdate) sqlSave(ctx context.Context) (n int, err er
 	}
 	if value, ok := rdu.mutation.UpdateTime(); ok {
 		_spec.SetField(resourcedefinition.FieldUpdateTime, field.TypeTime, value)
+	}
+	if value, ok := rdu.mutation.ApplicableProjectNames(); ok {
+		_spec.SetField(resourcedefinition.FieldApplicableProjectNames, field.TypeJSON, value)
+	}
+	if value, ok := rdu.mutation.AppendedApplicableProjectNames(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, resourcedefinition.FieldApplicableProjectNames, value)
+		})
+	}
+	if rdu.mutation.ApplicableProjectNamesCleared() {
+		_spec.ClearField(resourcedefinition.FieldApplicableProjectNames, field.TypeJSON)
 	}
 	if value, ok := rdu.mutation.Schema(); ok {
 		_spec.SetField(resourcedefinition.FieldSchema, field.TypeJSON, value)
@@ -512,6 +547,24 @@ func (rduo *ResourceDefinitionUpdateOne) ClearAnnotations() *ResourceDefinitionU
 // SetUpdateTime sets the "update_time" field.
 func (rduo *ResourceDefinitionUpdateOne) SetUpdateTime(t time.Time) *ResourceDefinitionUpdateOne {
 	rduo.mutation.SetUpdateTime(t)
+	return rduo
+}
+
+// SetApplicableProjectNames sets the "applicable_project_names" field.
+func (rduo *ResourceDefinitionUpdateOne) SetApplicableProjectNames(s []string) *ResourceDefinitionUpdateOne {
+	rduo.mutation.SetApplicableProjectNames(s)
+	return rduo
+}
+
+// AppendApplicableProjectNames appends s to the "applicable_project_names" field.
+func (rduo *ResourceDefinitionUpdateOne) AppendApplicableProjectNames(s []string) *ResourceDefinitionUpdateOne {
+	rduo.mutation.AppendApplicableProjectNames(s)
+	return rduo
+}
+
+// ClearApplicableProjectNames clears the value of the "applicable_project_names" field.
+func (rduo *ResourceDefinitionUpdateOne) ClearApplicableProjectNames() *ResourceDefinitionUpdateOne {
+	rduo.mutation.ClearApplicableProjectNames()
 	return rduo
 }
 
@@ -735,6 +788,13 @@ func (rduo *ResourceDefinitionUpdateOne) Set(obj *ResourceDefinition) *ResourceD
 					rduo.SetAnnotations(obj.Annotations)
 				}
 			}
+			if !reflect.ValueOf(obj.ApplicableProjectNames).IsZero() {
+				if !reflect.DeepEqual(db.ApplicableProjectNames, obj.ApplicableProjectNames) {
+					rduo.SetApplicableProjectNames(obj.ApplicableProjectNames)
+				}
+			} else {
+				rduo.ClearApplicableProjectNames()
+			}
 			if !reflect.DeepEqual(db.Schema, obj.Schema) {
 				rduo.SetSchema(obj.Schema)
 			}
@@ -801,6 +861,9 @@ func (rduo *ResourceDefinitionUpdateOne) SaveE(ctx context.Context, cbs ...func(
 		}
 		if _, set := rduo.mutation.Field(resourcedefinition.FieldAnnotations); set {
 			obj.Annotations = x.Annotations
+		}
+		if _, set := rduo.mutation.Field(resourcedefinition.FieldApplicableProjectNames); set {
+			obj.ApplicableProjectNames = x.ApplicableProjectNames
 		}
 		if _, set := rduo.mutation.Field(resourcedefinition.FieldSchema); set {
 			obj.Schema = x.Schema
@@ -895,6 +958,17 @@ func (rduo *ResourceDefinitionUpdateOne) sqlSave(ctx context.Context) (_node *Re
 	}
 	if value, ok := rduo.mutation.UpdateTime(); ok {
 		_spec.SetField(resourcedefinition.FieldUpdateTime, field.TypeTime, value)
+	}
+	if value, ok := rduo.mutation.ApplicableProjectNames(); ok {
+		_spec.SetField(resourcedefinition.FieldApplicableProjectNames, field.TypeJSON, value)
+	}
+	if value, ok := rduo.mutation.AppendedApplicableProjectNames(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, resourcedefinition.FieldApplicableProjectNames, value)
+		})
+	}
+	if rduo.mutation.ApplicableProjectNamesCleared() {
+		_spec.ClearField(resourcedefinition.FieldApplicableProjectNames, field.TypeJSON)
 	}
 	if value, ok := rduo.mutation.Schema(); ok {
 		_spec.SetField(resourcedefinition.FieldSchema, field.TypeJSON, value)

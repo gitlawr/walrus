@@ -31,6 +31,8 @@ type ResourceDefinitionCreateInput struct {
 	Description string `path:"-" query:"-" json:"description,omitempty"`
 	// Labels holds the value of the "labels" field.
 	Labels map[string]string `path:"-" query:"-" json:"labels,omitempty"`
+	// Projects the resource definition applies to.
+	ApplicableProjectNames []string `path:"-" query:"-" json:"applicableProjectNames,omitempty"`
 	// UI schema of the resource definition.
 	UiSchema *types.UISchema `path:"-" query:"-" json:"uiSchema,omitempty"`
 
@@ -46,11 +48,12 @@ func (rdci *ResourceDefinitionCreateInput) Model() *ResourceDefinition {
 	}
 
 	_rd := &ResourceDefinition{
-		Type:        rdci.Type,
-		Name:        rdci.Name,
-		Description: rdci.Description,
-		Labels:      rdci.Labels,
-		UiSchema:    rdci.UiSchema,
+		Type:                   rdci.Type,
+		Name:                   rdci.Name,
+		Description:            rdci.Description,
+		Labels:                 rdci.Labels,
+		ApplicableProjectNames: rdci.ApplicableProjectNames,
+		UiSchema:               rdci.UiSchema,
 	}
 
 	if rdci.MatchingRules != nil {
@@ -113,6 +116,8 @@ type ResourceDefinitionCreateInputsItem struct {
 	Description string `path:"-" query:"-" json:"description,omitempty"`
 	// Labels holds the value of the "labels" field.
 	Labels map[string]string `path:"-" query:"-" json:"labels,omitempty"`
+	// Projects the resource definition applies to.
+	ApplicableProjectNames []string `path:"-" query:"-" json:"applicableProjectNames,omitempty"`
 	// UI schema of the resource definition.
 	UiSchema *types.UISchema `path:"-" query:"-" json:"uiSchema,omitempty"`
 
@@ -167,11 +172,12 @@ func (rdci *ResourceDefinitionCreateInputs) Model() []*ResourceDefinition {
 
 	for i := range rdci.Items {
 		_rd := &ResourceDefinition{
-			Type:        rdci.Items[i].Type,
-			Name:        rdci.Items[i].Name,
-			Description: rdci.Items[i].Description,
-			Labels:      rdci.Items[i].Labels,
-			UiSchema:    rdci.Items[i].UiSchema,
+			Type:                   rdci.Items[i].Type,
+			Name:                   rdci.Items[i].Name,
+			Description:            rdci.Items[i].Description,
+			Labels:                 rdci.Items[i].Labels,
+			ApplicableProjectNames: rdci.Items[i].ApplicableProjectNames,
+			UiSchema:               rdci.Items[i].UiSchema,
 		}
 
 		if rdci.Items[i].MatchingRules != nil {
@@ -238,8 +244,8 @@ type ResourceDefinitionDeleteInput struct {
 type ResourceDefinitionDeleteInputsItem struct {
 	// ID of the ResourceDefinition entity, tries to retrieve the entity with the following unique index parts if no ID provided.
 	ID object.ID `path:"-" query:"-" json:"id,omitempty"`
-	// Type of the ResourceDefinition entity, a part of the unique index.
-	Type string `path:"-" query:"-" json:"type,omitempty"`
+	// Name of the ResourceDefinition entity, a part of the unique index.
+	Name string `path:"-" query:"-" json:"name,omitempty"`
 }
 
 // ResourceDefinitionDeleteInputs holds the deletion input of the ResourceDefinition entities,
@@ -319,10 +325,10 @@ func (rddi *ResourceDefinitionDeleteInputs) ValidateWith(ctx context.Context, cs
 			ids = append(ids, rddi.Items[i].ID)
 			ors = append(ors, resourcedefinition.ID(rddi.Items[i].ID))
 			indexers[rddi.Items[i].ID] = append(indexers[rddi.Items[i].ID], i)
-		} else if rddi.Items[i].Type != "" {
+		} else if rddi.Items[i].Name != "" {
 			ors = append(ors, resourcedefinition.And(
-				resourcedefinition.Type(rddi.Items[i].Type)))
-			indexerKey := fmt.Sprint("/", rddi.Items[i].Type)
+				resourcedefinition.Name(rddi.Items[i].Name)))
+			indexerKey := fmt.Sprint("/", rddi.Items[i].Name)
 			indexers[indexerKey] = append(indexers[indexerKey], i)
 		} else {
 			return errors.New("found item hasn't identify")
@@ -338,7 +344,7 @@ func (rddi *ResourceDefinitionDeleteInputs) ValidateWith(ctx context.Context, cs
 		Where(p).
 		Select(
 			resourcedefinition.FieldID,
-			resourcedefinition.FieldType,
+			resourcedefinition.FieldName,
 		).
 		All(ctx)
 	if err != nil {
@@ -352,12 +358,12 @@ func (rddi *ResourceDefinitionDeleteInputs) ValidateWith(ctx context.Context, cs
 	for i := range es {
 		indexer := indexers[es[i].ID]
 		if indexer == nil {
-			indexerKey := fmt.Sprint("/", es[i].Type)
+			indexerKey := fmt.Sprint("/", es[i].Name)
 			indexer = indexers[indexerKey]
 		}
 		for _, j := range indexer {
 			rddi.Items[j].ID = es[i].ID
-			rddi.Items[j].Type = es[i].Type
+			rddi.Items[j].Name = es[i].Name
 		}
 	}
 
@@ -409,16 +415,16 @@ func (rdpi *ResourceDefinitionPatchInput) ValidateWith(ctx context.Context, cs C
 				resourcedefinition.ID(rdpi.Refer.ID()))
 		} else if refers := rdpi.Refer.Split(1); len(refers) == 1 {
 			q.Where(
-				resourcedefinition.Type(refers[0].String()))
+				resourcedefinition.Name(refers[0].String()))
 		} else {
 			return errors.New("invalid identify refer of resourcedefinition")
 		}
 	} else if rdpi.ID != "" {
 		q.Where(
 			resourcedefinition.ID(rdpi.ID))
-	} else if rdpi.Type != "" {
+	} else if rdpi.Name != "" {
 		q.Where(
-			resourcedefinition.Type(rdpi.Type))
+			resourcedefinition.Name(rdpi.Name))
 	} else {
 		return errors.New("invalid identify of resourcedefinition")
 	}
@@ -471,8 +477,8 @@ type ResourceDefinitionQueryInput struct {
 	Refer *object.Refer `path:"resourcedefinition,default=" query:"-" json:"-"`
 	// ID of the ResourceDefinition entity, tries to retrieve the entity with the following unique index parts if no ID provided.
 	ID object.ID `path:"-" query:"-" json:"id,omitempty"`
-	// Type of the ResourceDefinition entity, a part of the unique index.
-	Type string `path:"-" query:"-" json:"type,omitempty"`
+	// Name of the ResourceDefinition entity, a part of the unique index.
+	Name string `path:"-" query:"-" json:"name,omitempty"`
 }
 
 // Model returns the ResourceDefinition entity for querying,
@@ -484,7 +490,7 @@ func (rdqi *ResourceDefinitionQueryInput) Model() *ResourceDefinition {
 
 	return &ResourceDefinition{
 		ID:   rdqi.ID,
-		Type: rdqi.Type,
+		Name: rdqi.Name,
 	}
 }
 
@@ -519,23 +525,23 @@ func (rdqi *ResourceDefinitionQueryInput) ValidateWith(ctx context.Context, cs C
 				resourcedefinition.ID(rdqi.Refer.ID()))
 		} else if refers := rdqi.Refer.Split(1); len(refers) == 1 {
 			q.Where(
-				resourcedefinition.Type(refers[0].String()))
+				resourcedefinition.Name(refers[0].String()))
 		} else {
 			return errors.New("invalid identify refer of resourcedefinition")
 		}
 	} else if rdqi.ID != "" {
 		q.Where(
 			resourcedefinition.ID(rdqi.ID))
-	} else if rdqi.Type != "" {
+	} else if rdqi.Name != "" {
 		q.Where(
-			resourcedefinition.Type(rdqi.Type))
+			resourcedefinition.Name(rdqi.Name))
 	} else {
 		return errors.New("invalid identify of resourcedefinition")
 	}
 
 	q.Select(
 		resourcedefinition.FieldID,
-		resourcedefinition.FieldType,
+		resourcedefinition.FieldName,
 	)
 
 	var e *ResourceDefinition
@@ -558,7 +564,7 @@ func (rdqi *ResourceDefinitionQueryInput) ValidateWith(ctx context.Context, cs C
 	}
 
 	rdqi.ID = e.ID
-	rdqi.Type = e.Type
+	rdqi.Name = e.Name
 	return nil
 }
 
@@ -566,6 +572,9 @@ func (rdqi *ResourceDefinitionQueryInput) ValidateWith(ctx context.Context, cs C
 // please tags with `path:",inline" query:",inline"` if embedding.
 type ResourceDefinitionQueryInputs struct {
 	inputConfig `path:"-" query:"-" json:"-"`
+
+	// Type of the resources generated from the resource definition.
+	Type string `path:"-" query:"type,omitempty" json:"-"`
 }
 
 // Validate checks the ResourceDefinitionQueryInputs entity.
@@ -599,6 +608,10 @@ type ResourceDefinitionUpdateInput struct {
 	Description string `path:"-" query:"-" json:"description,omitempty"`
 	// Labels holds the value of the "labels" field.
 	Labels map[string]string `path:"-" query:"-" json:"labels,omitempty"`
+	// Type of the resources generated from the resource definition.
+	Type string `path:"-" query:"-" json:"type,omitempty"`
+	// Projects the resource definition applies to.
+	ApplicableProjectNames []string `path:"-" query:"-" json:"applicableProjectNames,omitempty"`
 	// UI schema of the resource definition.
 	UiSchema *types.UISchema `path:"-" query:"-" json:"uiSchema,omitempty"`
 
@@ -614,11 +627,13 @@ func (rdui *ResourceDefinitionUpdateInput) Model() *ResourceDefinition {
 	}
 
 	_rd := &ResourceDefinition{
-		ID:          rdui.ID,
-		Type:        rdui.Type,
-		Description: rdui.Description,
-		Labels:      rdui.Labels,
-		UiSchema:    rdui.UiSchema,
+		ID:                     rdui.ID,
+		Name:                   rdui.Name,
+		Description:            rdui.Description,
+		Labels:                 rdui.Labels,
+		Type:                   rdui.Type,
+		ApplicableProjectNames: rdui.ApplicableProjectNames,
+		UiSchema:               rdui.UiSchema,
 	}
 
 	if rdui.MatchingRules != nil {
@@ -675,13 +690,17 @@ func (rdui *ResourceDefinitionUpdateInput) ValidateWith(ctx context.Context, cs 
 type ResourceDefinitionUpdateInputsItem struct {
 	// ID of the ResourceDefinition entity, tries to retrieve the entity with the following unique index parts if no ID provided.
 	ID object.ID `path:"-" query:"-" json:"id,omitempty"`
-	// Type of the ResourceDefinition entity, a part of the unique index.
-	Type string `path:"-" query:"-" json:"type,omitempty"`
+	// Name of the ResourceDefinition entity, a part of the unique index.
+	Name string `path:"-" query:"-" json:"name,omitempty"`
 
 	// Description holds the value of the "description" field.
 	Description string `path:"-" query:"-" json:"description,omitempty"`
 	// Labels holds the value of the "labels" field.
 	Labels map[string]string `path:"-" query:"-" json:"labels,omitempty"`
+	// Type of the resources generated from the resource definition.
+	Type string `path:"-" query:"-" json:"type"`
+	// Projects the resource definition applies to.
+	ApplicableProjectNames []string `path:"-" query:"-" json:"applicableProjectNames,omitempty"`
 	// UI schema of the resource definition.
 	UiSchema *types.UISchema `path:"-" query:"-" json:"uiSchema,omitempty"`
 
@@ -736,11 +755,13 @@ func (rdui *ResourceDefinitionUpdateInputs) Model() []*ResourceDefinition {
 
 	for i := range rdui.Items {
 		_rd := &ResourceDefinition{
-			ID:          rdui.Items[i].ID,
-			Type:        rdui.Items[i].Type,
-			Description: rdui.Items[i].Description,
-			Labels:      rdui.Items[i].Labels,
-			UiSchema:    rdui.Items[i].UiSchema,
+			ID:                     rdui.Items[i].ID,
+			Name:                   rdui.Items[i].Name,
+			Description:            rdui.Items[i].Description,
+			Labels:                 rdui.Items[i].Labels,
+			Type:                   rdui.Items[i].Type,
+			ApplicableProjectNames: rdui.Items[i].ApplicableProjectNames,
+			UiSchema:               rdui.Items[i].UiSchema,
 		}
 
 		if rdui.Items[i].MatchingRules != nil {
@@ -813,10 +834,10 @@ func (rdui *ResourceDefinitionUpdateInputs) ValidateWith(ctx context.Context, cs
 			ids = append(ids, rdui.Items[i].ID)
 			ors = append(ors, resourcedefinition.ID(rdui.Items[i].ID))
 			indexers[rdui.Items[i].ID] = append(indexers[rdui.Items[i].ID], i)
-		} else if rdui.Items[i].Type != "" {
+		} else if rdui.Items[i].Name != "" {
 			ors = append(ors, resourcedefinition.And(
-				resourcedefinition.Type(rdui.Items[i].Type)))
-			indexerKey := fmt.Sprint("/", rdui.Items[i].Type)
+				resourcedefinition.Name(rdui.Items[i].Name)))
+			indexerKey := fmt.Sprint("/", rdui.Items[i].Name)
 			indexers[indexerKey] = append(indexers[indexerKey], i)
 		} else {
 			return errors.New("found item hasn't identify")
@@ -832,7 +853,7 @@ func (rdui *ResourceDefinitionUpdateInputs) ValidateWith(ctx context.Context, cs
 		Where(p).
 		Select(
 			resourcedefinition.FieldID,
-			resourcedefinition.FieldType,
+			resourcedefinition.FieldName,
 		).
 		All(ctx)
 	if err != nil {
@@ -846,12 +867,12 @@ func (rdui *ResourceDefinitionUpdateInputs) ValidateWith(ctx context.Context, cs
 	for i := range es {
 		indexer := indexers[es[i].ID]
 		if indexer == nil {
-			indexerKey := fmt.Sprint("/", es[i].Type)
+			indexerKey := fmt.Sprint("/", es[i].Name)
 			indexer = indexers[indexerKey]
 		}
 		for _, j := range indexer {
 			rdui.Items[j].ID = es[i].ID
-			rdui.Items[j].Type = es[i].Type
+			rdui.Items[j].Name = es[i].Name
 		}
 	}
 
@@ -866,15 +887,16 @@ func (rdui *ResourceDefinitionUpdateInputs) ValidateWith(ctx context.Context, cs
 
 // ResourceDefinitionOutput holds the output of the ResourceDefinition entity.
 type ResourceDefinitionOutput struct {
-	ID          object.ID         `json:"id,omitempty"`
-	Name        string            `json:"name,omitempty"`
-	Description string            `json:"description,omitempty"`
-	Labels      map[string]string `json:"labels,omitempty"`
-	CreateTime  *time.Time        `json:"createTime,omitempty"`
-	UpdateTime  *time.Time        `json:"updateTime,omitempty"`
-	Type        string            `json:"type,omitempty"`
-	Schema      types.Schema      `json:"schema,omitempty"`
-	UiSchema    *types.UISchema   `json:"uiSchema,omitempty"`
+	ID                     object.ID         `json:"id,omitempty"`
+	Name                   string            `json:"name,omitempty"`
+	Description            string            `json:"description,omitempty"`
+	Labels                 map[string]string `json:"labels,omitempty"`
+	CreateTime             *time.Time        `json:"createTime,omitempty"`
+	UpdateTime             *time.Time        `json:"updateTime,omitempty"`
+	Type                   string            `json:"type,omitempty"`
+	ApplicableProjectNames []string          `json:"applicableProjectNames,omitempty"`
+	Schema                 types.Schema      `json:"schema,omitempty"`
+	UiSchema               *types.UISchema   `json:"uiSchema,omitempty"`
 
 	MatchingRules []*ResourceDefinitionMatchingRuleOutput `json:"matchingRules,omitempty"`
 }
@@ -896,15 +918,16 @@ func ExposeResourceDefinition(_rd *ResourceDefinition) *ResourceDefinitionOutput
 	}
 
 	rdo := &ResourceDefinitionOutput{
-		ID:          _rd.ID,
-		Name:        _rd.Name,
-		Description: _rd.Description,
-		Labels:      _rd.Labels,
-		CreateTime:  _rd.CreateTime,
-		UpdateTime:  _rd.UpdateTime,
-		Type:        _rd.Type,
-		Schema:      _rd.Schema,
-		UiSchema:    _rd.UiSchema,
+		ID:                     _rd.ID,
+		Name:                   _rd.Name,
+		Description:            _rd.Description,
+		Labels:                 _rd.Labels,
+		CreateTime:             _rd.CreateTime,
+		UpdateTime:             _rd.UpdateTime,
+		Type:                   _rd.Type,
+		ApplicableProjectNames: _rd.ApplicableProjectNames,
+		Schema:                 _rd.Schema,
+		UiSchema:               _rd.UiSchema,
 	}
 
 	if _rd.Edges.MatchingRules != nil {

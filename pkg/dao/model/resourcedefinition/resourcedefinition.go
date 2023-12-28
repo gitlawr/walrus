@@ -35,6 +35,8 @@ const (
 	FieldUpdateTime = "update_time"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
+	// FieldApplicableProjectNames holds the string denoting the applicable_project_names field in the database.
+	FieldApplicableProjectNames = "applicable_project_names"
 	// FieldSchema holds the string denoting the schema field in the database.
 	FieldSchema = "schema"
 	// FieldUiSchema holds the string denoting the uischema field in the database.
@@ -71,6 +73,7 @@ var Columns = []string{
 	FieldCreateTime,
 	FieldUpdateTime,
 	FieldType,
+	FieldApplicableProjectNames,
 	FieldSchema,
 	FieldUiSchema,
 }
@@ -104,6 +107,8 @@ var (
 	DefaultUpdateTime func() time.Time
 	// UpdateDefaultUpdateTime holds the default value on update for the "update_time" field.
 	UpdateDefaultUpdateTime func() time.Time
+	// DefaultApplicableProjectNames holds the default value on creation for the "applicable_project_names" field.
+	DefaultApplicableProjectNames []string
 	// DefaultSchema holds the default value on creation for the "schema" field.
 	DefaultSchema types.Schema
 	// DefaultUiSchema holds the default value on creation for the "uiSchema" field.

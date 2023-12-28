@@ -38,6 +38,8 @@ type ResourceDefinition struct {
 	UpdateTime *time.Time `json:"update_time,omitempty"`
 	// Type of the resources generated from the resource definition.
 	Type string `json:"type,omitempty"`
+	// Projects the resource definition applies to.
+	ApplicableProjectNames []string `json:"applicable_project_names,omitempty"`
 	// Generated schema of the resource definition.
 	Schema types.Schema `json:"schema,omitempty"`
 	// UI schema of the resource definition.
@@ -82,7 +84,7 @@ func (*ResourceDefinition) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case resourcedefinition.FieldLabels, resourcedefinition.FieldAnnotations, resourcedefinition.FieldSchema, resourcedefinition.FieldUiSchema:
+		case resourcedefinition.FieldLabels, resourcedefinition.FieldAnnotations, resourcedefinition.FieldApplicableProjectNames, resourcedefinition.FieldSchema, resourcedefinition.FieldUiSchema:
 			values[i] = new([]byte)
 		case resourcedefinition.FieldID:
 			values[i] = new(object.ID)
@@ -158,6 +160,14 @@ func (rd *ResourceDefinition) assignValues(columns []string, values []any) error
 				return fmt.Errorf("unexpected type %T for field type", values[i])
 			} else if value.Valid {
 				rd.Type = value.String
+			}
+		case resourcedefinition.FieldApplicableProjectNames:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field applicable_project_names", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &rd.ApplicableProjectNames); err != nil {
+					return fmt.Errorf("unmarshal field applicable_project_names: %w", err)
+				}
 			}
 		case resourcedefinition.FieldSchema:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -245,6 +255,9 @@ func (rd *ResourceDefinition) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(rd.Type)
+	builder.WriteString(", ")
+	builder.WriteString("applicable_project_names=")
+	builder.WriteString(fmt.Sprintf("%v", rd.ApplicableProjectNames))
 	builder.WriteString(", ")
 	builder.WriteString("schema=")
 	builder.WriteString(fmt.Sprintf("%v", rd.Schema))
