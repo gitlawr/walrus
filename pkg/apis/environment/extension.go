@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqljson"
 
 	"github.com/seal-io/walrus/pkg/auths"
 	"github.com/seal-io/walrus/pkg/auths/session"
@@ -13,6 +14,7 @@ import (
 	"github.com/seal-io/walrus/pkg/dao/model/environment"
 	"github.com/seal-io/walrus/pkg/dao/model/project"
 	"github.com/seal-io/walrus/pkg/dao/model/resource"
+	"github.com/seal-io/walrus/pkg/dao/model/resourcedefinition"
 	"github.com/seal-io/walrus/pkg/dao/model/resourcedefinitionmatchingrule"
 	"github.com/seal-io/walrus/pkg/dao/model/resourcerelationship"
 	"github.com/seal-io/walrus/pkg/dao/model/template"
@@ -238,7 +240,37 @@ func (h Handler) RouteClone(req RouteCloneEnvironmentRequest) (*RouteCloneEnviro
 func (h Handler) RouteGetResourceDefinitions(
 	req RouteGetResourceDefinitionsRequest,
 ) (RouteGetResourceDefinitionsResponse, error) {
+	env, err := h.modelClient.Environments().Query().
+		Where(environment.ID(req.ID)).
+		WithProject(func(pq *model.ProjectQuery) {
+			pq.Select(project.FieldName)
+		}).
+		Only(req.Context)
+	if err != nil {
+		return nil, err
+	}
+
 	rds, err := h.modelClient.ResourceDefinitions().Query().
+		Modify(func(s *sql.Selector) {
+			s.Where(
+				sql.Or(
+					sqljson.ValueContains(resourcedefinition.FieldApplicableProjectNames, env.Edges.Project.Name),
+					sqljson.LenEQ(resourcedefinition.FieldApplicableProjectNames, 0),
+				),
+			).
+				SelectExpr(
+					sql.Expr(fmt.Sprintf(`DISTINCT on(%s) *`, resourcedefinition.FieldType)),
+				).
+				OrderExpr(
+					sql.Expr(
+						fmt.Sprintf(
+							`%s, jsonb_array_length(%s) DESC`,
+							resourcedefinition.FieldType,
+							resourcedefinition.FieldApplicableProjectNames,
+						),
+					),
+				)
+		}).
 		WithMatchingRules(func(rq *model.ResourceDefinitionMatchingRuleQuery) {
 			rq.Order(model.Asc(resourcedefinitionmatchingrule.FieldOrder)).
 				Unique(false).
@@ -260,22 +292,11 @@ func (h Handler) RouteGetResourceDefinitions(
 		return nil, err
 	}
 
-	env, err := h.modelClient.Environments().Query().
-		Where(environment.ID(req.ID)).
-		WithProject(func(pq *model.ProjectQuery) {
-			pq.Select(project.FieldName)
-		}).
-		Only(req.Context)
-	if err != nil {
-		return nil, err
-	}
-
 	var availableRds []*model.ResourceDefinition
 
 	for _, rd := range rds {
 		m := resourcedefinitions.MatchEnvironment(
 			rd.Edges.MatchingRules,
-			env.Edges.Project.Name,
 			env.Name,
 			env.Type,
 			env.Labels,

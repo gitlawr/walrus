@@ -24,14 +24,13 @@ func TestMatchEnvironment(t *testing.T) {
 			matchRules: []*model.ResourceDefinitionMatchingRule{
 				{
 					Selector: types.Selector{
-						ProjectName: "p-x",
+						EnvironmentNames: []string{"f"},
 					},
 				},
 				{
 					Selector: types.Selector{
-						ProjectName:     "p",
-						EnvironmentName: "e",
-						EnvironmentType: "development",
+						EnvironmentNames: []string{"e"},
+						EnvironmentTypes: []string{"development"},
 						EnvironmentLabels: map[string]string{
 							"l1": "v1",
 						},
@@ -44,9 +43,8 @@ func TestMatchEnvironment(t *testing.T) {
 			environmentLabels: map[string]string{"l1": "v1"},
 			expected: &model.ResourceDefinitionMatchingRule{
 				Selector: types.Selector{
-					ProjectName:     "p",
-					EnvironmentName: "e",
-					EnvironmentType: "development",
+					EnvironmentNames: []string{"e"},
+					EnvironmentTypes: []string{"development"},
 					EnvironmentLabels: map[string]string{
 						"l1": "v1",
 					},
@@ -58,12 +56,12 @@ func TestMatchEnvironment(t *testing.T) {
 			matchRules: []*model.ResourceDefinitionMatchingRule{
 				{
 					Selector: types.Selector{
-						ProjectName: "p-x",
+						EnvironmentNames: []string{"f"},
 					},
 				},
 				{
 					Selector: types.Selector{
-						EnvironmentType: "development",
+						EnvironmentTypes: []string{"development"},
 						EnvironmentLabels: map[string]string{
 							"l1": "v1",
 						},
@@ -76,7 +74,7 @@ func TestMatchEnvironment(t *testing.T) {
 			environmentLabels: map[string]string{"l1": "v1"},
 			expected: &model.ResourceDefinitionMatchingRule{
 				Selector: types.Selector{
-					EnvironmentType: "development",
+					EnvironmentTypes: []string{"development"},
 					EnvironmentLabels: map[string]string{
 						"l1": "v1",
 					},
@@ -88,7 +86,6 @@ func TestMatchEnvironment(t *testing.T) {
 			matchRules: []*model.ResourceDefinitionMatchingRule{
 				{
 					Selector: types.Selector{
-						ProjectName: "p-x",
 						EnvironmentLabels: map[string]string{
 							"l1": "v1",
 						},
@@ -96,7 +93,7 @@ func TestMatchEnvironment(t *testing.T) {
 				},
 				{
 					Selector: types.Selector{
-						EnvironmentType: "development",
+						EnvironmentTypes: []string{"development"},
 						EnvironmentLabels: map[string]string{
 							"l2": "v2",
 						},
@@ -114,7 +111,6 @@ func TestMatchEnvironment(t *testing.T) {
 	for _, tc := range testCases {
 		actual := MatchEnvironment(
 			tc.matchRules,
-			tc.projectName,
 			tc.environmentName,
 			tc.environmentType,
 			tc.environmentLabels,

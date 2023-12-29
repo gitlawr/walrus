@@ -465,7 +465,6 @@ func (d Deployer) createRevision(
 		rd := res.Edges.ResourceDefinition
 		matchRule := resourcedefinitions.Match(
 			rd.Edges.MatchingRules,
-			res.Edges.Project.Name,
 			res.Edges.Environment.Name,
 			res.Edges.Environment.Type,
 			res.Edges.Environment.Labels,

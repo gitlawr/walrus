@@ -1,10 +1,13 @@
 package resourcedefinition
 
 import (
+	"fmt"
+
 	"github.com/seal-io/walrus/pkg/apis/runtime"
 	"github.com/seal-io/walrus/pkg/dao/model"
 	"github.com/seal-io/walrus/pkg/dao/model/predicate"
 	"github.com/seal-io/walrus/pkg/dao/model/resourcedefinition"
+	"github.com/seal-io/walrus/pkg/resourcedefinitions"
 	"github.com/seal-io/walrus/utils/validation"
 )
 
@@ -25,6 +28,21 @@ func (r *CreateRequest) Validate() error {
 		return err
 	}
 
+	definitions, err := r.Client.ResourceDefinitions().Query().
+		Where(
+			resourcedefinition.Type(r.Type),
+		).
+		All(r.Context)
+	if err != nil {
+		return err
+	}
+
+	for _, def := range definitions {
+		if err = resourcedefinitions.IsConflict(r.ApplicableProjectNames, def.ApplicableProjectNames); err != nil {
+			return fmt.Errorf("conflict with resource definition %q: %w", def.Name, err)
+		}
+	}
+
 	return nil
 }
 
@@ -41,6 +59,22 @@ type UpdateRequest struct {
 func (r *UpdateRequest) Validate() error {
 	if err := r.ResourceDefinitionUpdateInput.Validate(); err != nil {
 		return err
+	}
+
+	definitions, err := r.Client.ResourceDefinitions().Query().
+		Where(
+			resourcedefinition.Type(r.Type),
+			resourcedefinition.IDNEQ(r.ID),
+		).
+		All(r.Context)
+	if err != nil {
+		return err
+	}
+
+	for _, def := range definitions {
+		if err = resourcedefinitions.IsConflict(r.ApplicableProjectNames, def.ApplicableProjectNames); err != nil {
+			return fmt.Errorf("conflict with resource definition %q: %w", def.Name, err)
+		}
 	}
 
 	return nil

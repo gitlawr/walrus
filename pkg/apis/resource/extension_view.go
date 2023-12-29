@@ -80,8 +80,7 @@ func (r *RouteUpgradeRequest) Validate() error {
 
 	if entity.ResourceDefinitionID != nil {
 		r.ResourceDefinition = &model.ResourceDefinitionQueryInput{
-			Type: entity.Edges.ResourceDefinition.Type,
-			ID:   *entity.ResourceDefinitionID,
+			ID: *entity.ResourceDefinitionID,
 		}
 	}
 
@@ -124,7 +123,7 @@ func (r *RouteUpgradeRequest) Validate() error {
 		}
 	case r.ResourceDefinition != nil:
 		rd, err := r.Client.ResourceDefinitions().Query().
-			Where(resourcedefinition.Type(r.ResourceDefinition.Type)).
+			Where(resourcedefinition.ID(r.ResourceDefinition.ID)).
 			WithMatchingRules(func(rq *model.ResourceDefinitionMatchingRuleQuery) {
 				rq.Order(model.Asc(resourcedefinitionmatchingrule.FieldOrder)).
 					Select(resourcedefinitionmatchingrule.FieldResourceDefinitionID).
@@ -161,7 +160,6 @@ func (r *RouteUpgradeRequest) Validate() error {
 
 		rule := resourcedefinitions.Match(
 			rd.Edges.MatchingRules,
-			env.Edges.Project.Name,
 			env.Name,
 			env.Type,
 			env.Labels,
@@ -525,8 +523,7 @@ func (r *CollectionRouteUpgradeRequest) Validate() error {
 
 		if entity.ResourceDefinitionID != nil {
 			input.ResourceDefinition = &model.ResourceDefinitionQueryInput{
-				Type: entity.Edges.ResourceDefinition.Type,
-				ID:   *entity.ResourceDefinitionID,
+				ID: *entity.ResourceDefinitionID,
 			}
 		}
 
@@ -569,7 +566,7 @@ func (r *CollectionRouteUpgradeRequest) Validate() error {
 			}
 		case input.ResourceDefinition != nil:
 			rd, err := r.Client.ResourceDefinitions().Query().
-				Where(resourcedefinition.Type(input.ResourceDefinition.Type)).
+				Where(resourcedefinition.ID(input.ResourceDefinition.ID)).
 				WithMatchingRules(func(rq *model.ResourceDefinitionMatchingRuleQuery) {
 					rq.Order(model.Asc(resourcedefinitionmatchingrule.FieldOrder)).
 						Select(resourcedefinitionmatchingrule.FieldResourceDefinitionID).
@@ -606,7 +603,6 @@ func (r *CollectionRouteUpgradeRequest) Validate() error {
 
 			rule := resourcedefinitions.Match(
 				rd.Edges.MatchingRules,
-				env.Edges.Project.Name,
 				env.Name,
 				env.Type,
 				env.Labels,

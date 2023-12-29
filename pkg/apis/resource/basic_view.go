@@ -173,7 +173,6 @@ func (r *PatchRequest) Validate() error {
 
 		rule := resourcedefinitions.Match(
 			entity.Edges.ResourceDefinition.Edges.MatchingRules,
-			env.Edges.Project.Name,
 			env.Name,
 			env.Type,
 			env.Labels,
@@ -219,17 +218,23 @@ type (
 )
 
 func (r *CollectionCreateRequest) Validate() error {
-	// Resource type maps to type in definition edge.
-	for _, item := range r.Items {
-		if item.Type != "" {
-			item.ResourceDefinition = &model.ResourceDefinitionQueryInput{
-				Type: item.Type,
-			}
-		}
-	}
-
 	if err := r.ResourceCreateInputs.Validate(); err != nil {
 		return err
+	}
+
+	cache := make(map[string]*model.ResourceDefinition)
+
+	for _, rci := range r.Items {
+		// Mutate definition edge according to matching resource definition.
+		if rci.Type != "" {
+			def, err := dao.GetMatchingResourceDefinitionWith(r.Context, r.Client, rci.Type, r.Project.Name, cache)
+			if err != nil {
+				return err
+			}
+			rci.ResourceDefinition = &model.ResourceDefinitionQueryInput{
+				ID: def.ID,
+			}
+		}
 	}
 
 	// Verify resources.
@@ -332,9 +337,9 @@ func (r *CollectionCreateRequest) Validate() error {
 		return fmt.Errorf("failed to get resource definition: %w", err)
 	}
 
-	rdm := make(map[string]*model.ResourceDefinition, len(rds))
+	rdm := make(map[object.ID]*model.ResourceDefinition, len(rds))
 	for _, rd := range rds {
-		rdm[rd.Type] = rd
+		rdm[rd.ID] = rd
 	}
 
 	for _, res := range r.Items {
@@ -353,10 +358,9 @@ func (r *CollectionCreateRequest) Validate() error {
 					return fmt.Errorf("invalid variables: %w", err)
 				}
 			}
-		case res.Type != "":
+		case res.ResourceDefinition != nil:
 			rule := resourcedefinitions.Match(
-				rdm[res.Type].Edges.MatchingRules,
-				env.Edges.Project.Name,
+				rdm[res.ResourceDefinition.ID].Edges.MatchingRules,
 				env.Name,
 				env.Type,
 				env.Labels,
@@ -523,15 +527,19 @@ func validateVariable(
 }
 
 func ValidateCreateInput(rci *model.ResourceCreateInput) error {
-	// Resource type maps to type in definition edge.
-	if rci.Type != "" {
-		rci.ResourceDefinition = &model.ResourceDefinitionQueryInput{
-			Type: rci.Type,
-		}
-	}
-
 	if err := rci.Validate(); err != nil {
 		return err
+	}
+
+	// Mutate definition edge according to matching resource definition.
+	if rci.Type != "" {
+		def, err := dao.GetMatchingResourceDefinition(rci.Context, rci.Client, rci.Type, rci.Project.Name)
+		if err != nil {
+			return err
+		}
+		rci.ResourceDefinition = &model.ResourceDefinitionQueryInput{
+			ID: def.ID,
+		}
 	}
 
 	if err := validation.IsDNSLabel(rci.Name); err != nil {
@@ -589,9 +597,9 @@ func ValidateCreateInput(rci *model.ResourceCreateInput) error {
 				return fmt.Errorf("invalid variables: %w", err)
 			}
 		}
-	case rci.Type != "":
+	case rci.ResourceDefinition != nil:
 		rd, err := rci.Client.ResourceDefinitions().Query().
-			Where(resourcedefinition.Type(rci.Type)).
+			Where(resourcedefinition.ID(rci.ResourceDefinition.ID)).
 			WithMatchingRules(func(rq *model.ResourceDefinitionMatchingRuleQuery) {
 				rq.Order(model.Asc(resourcedefinitionmatchingrule.FieldOrder)).
 					Select(resourcedefinitionmatchingrule.FieldResourceDefinitionID).
@@ -613,7 +621,6 @@ func ValidateCreateInput(rci *model.ResourceCreateInput) error {
 
 		rule := resourcedefinitions.Match(
 			rd.Edges.MatchingRules,
-			env.Edges.Project.Name,
 			env.Name,
 			env.Type,
 			env.Labels,

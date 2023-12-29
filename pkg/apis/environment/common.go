@@ -93,6 +93,12 @@ func createEnvironment(
 }
 
 func validateEnvironmentCreateInput(r model.EnvironmentCreateInput) error {
+	if err := r.Validate(); err != nil {
+		return err
+	}
+
+	cache := make(map[string]*model.ResourceDefinition)
+
 	for _, res := range r.Resources {
 		if res == nil {
 			return errors.New("empty resource")
@@ -102,16 +108,16 @@ func validateEnvironmentCreateInput(r model.EnvironmentCreateInput) error {
 			return fmt.Errorf("invalid resource name: %w", err)
 		}
 
+		// Mutate definition edge according to matching resource definition.
 		if res.Type != "" {
-			// Resource type maps to type in definition edge.
+			def, err := dao.GetMatchingResourceDefinitionWith(r.Context, r.Client, res.Type, r.Project.Name, cache)
+			if err != nil {
+				return err
+			}
 			res.ResourceDefinition = &model.ResourceDefinitionQueryInput{
-				Type: res.Type,
+				ID: def.ID,
 			}
 		}
-	}
-
-	if err := r.Validate(); err != nil {
-		return err
 	}
 
 	if err := validation.IsDNSLabel(r.Name); err != nil {
@@ -190,9 +196,9 @@ func validateEnvironmentCreateInput(r model.EnvironmentCreateInput) error {
 		return fmt.Errorf("failed to get resource definition: %w", err)
 	}
 
-	rdm := make(map[string]*model.ResourceDefinition, len(rds))
+	rdm := make(map[object.ID]*model.ResourceDefinition, len(rds))
 	for _, rd := range rds {
-		rdm[rd.Type] = rd
+		rdm[rd.ID] = rd
 	}
 
 	for _, res := range r.Resources {
@@ -211,10 +217,9 @@ func validateEnvironmentCreateInput(r model.EnvironmentCreateInput) error {
 					return fmt.Errorf("invalid variables: %w", err)
 				}
 			}
-		case res.Type != "":
+		case res.ResourceDefinition != nil:
 			rule := resourcedefinitions.Match(
-				rdm[res.Type].Edges.MatchingRules,
-				r.Project.Name,
+				rdm[res.ResourceDefinition.ID].Edges.MatchingRules,
 				r.Name,
 				r.Type,
 				r.Labels,
