@@ -65,12 +65,16 @@ jobs:
           key: toolbox-${{ runner.os }}
           path: |
             ${{ github.workspace }}/.sbin
+      - name: PreCheck
+        run: df -lh
       - name: Build
         run: make ci
         env:
           LINT_DIRTY: "true"
           PACKAGE_BUILD: "false"
           WALRUS_TELEMETRY_API_KEY: "${{ github.event_name != 'pull_request' && secrets.CI_TELEMETRY_API_KEY || '' }}"
+      - name: PostCheck
+        run: df -lh
       - name: Archive Publish Result
         uses: actions/cache/save@v3
         with:
