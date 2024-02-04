@@ -12,7 +12,7 @@ export no_proxy=127.0.0.1,localhost
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 mkdir -p "${ROOT_DIR}/.sbin"
-mkdir -p "${ROOT_DIR}/.dist"
+mkdir -p "${ROOT_DIR}/.dist/tmp"
 
 for file in "${ROOT_DIR}/hack/lib/"*; do
   if [[ -f "${file}" ]] && [[ "${file}" != *"init.sh" ]]; then

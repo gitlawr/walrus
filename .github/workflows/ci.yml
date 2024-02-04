@@ -22,6 +22,7 @@ on:
       - "v*.*.*"
     branches:
       - "main"
+      - "test-ci"
     paths-ignore:
       - "docs/**"
       - "**.md"
@@ -43,6 +44,14 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-22.04
     steps:
+      # Clean up unused tools to have more disk space in the GitHub hosted runner.
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 30720
+          temp-reserve-mb: 4096
+          remove-android: true
+          remove-dotnet: true
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -65,12 +74,16 @@ jobs:
           key: toolbox-${{ runner.os }}
           path: |
             ${{ github.workspace }}/.sbin
+      - name: PreCheck
+        run: df -lh
       - name: Build
         run: make ci
         env:
           LINT_DIRTY: "true"
           PACKAGE_BUILD: "false"
           WALRUS_TELEMETRY_API_KEY: "${{ github.event_name != 'pull_request' && secrets.CI_TELEMETRY_API_KEY || '' }}"
+      - name: PostCheck
+        run: df -lh
       - name: Archive Publish Result
         uses: actions/cache/save@v3
         with:
